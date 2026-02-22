@@ -147,19 +147,6 @@ export async function initScene() {
   scene.add(ground);
   scene.userData.ground = ground;
 
-  // -------------------------
-  // Real grass overlay (instanced cards) - high realism near pool
-  // -------------------------
-  const grassSystem = new GrassInstanced(renderer, {
-    radius: 50,
-    count: 3000000,
-    bladeHeight: 0.05,
-    bladeWidth: 0.1,
-    fadeNear: 7,
-    fadeFar: 80
-  });
-  grassSystem.addTo(scene);
-  scene.userData.grassSystem = grassSystem;
 
   // -------------------------
   // HDRI: keep lighting via PMREM, but show background via a SKY-DOME.
