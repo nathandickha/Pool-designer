@@ -47,6 +47,8 @@ export async function initScene() {
   dirLight.position.set(18, -22, 30);
   dirLight.castShadow = true;
 
+  // If you want extra FPS, drop to 1024:
+  // dirLight.shadow.mapSize.set(1024, 1024);
   dirLight.shadow.mapSize.set(2048, 2048);
   dirLight.shadow.normalBias = 0.02;
   dirLight.shadow.bias = -0.0002;
@@ -82,8 +84,6 @@ export async function initScene() {
 
   // -------------------------
   // Ground material: PBR grass (albedo + normal + roughness + height as BUMP)
-  //
-  // Your textures folder contains .jpg files (per your tree).
   // -------------------------
   const GRASS_ALBEDO = "./textures/grass.png";
   const GRASS_NORMAL = "./textures/grass_normal.png";
@@ -106,16 +106,18 @@ export async function initScene() {
   grassHeight.wrapS = grassHeight.wrapT = THREE.RepeatWrapping;
 
   // Tile density:
-  // - Larger numbers = smaller repeated pattern = less obvious tiling
-  // - 14–24 is a good range for a "lawn" feel on a large ground plane
   const grassRepeat = 1;
   grassColor.repeat.set(grassRepeat, grassRepeat);
   grassNormal.repeat.set(grassRepeat, grassRepeat);
   grassRough.repeat.set(grassRepeat, grassRepeat);
   grassHeight.repeat.set(grassRepeat, grassRepeat);
 
-  // Improve grazing-angle sharpness
-  const maxAniso = renderer.capabilities.getMaxAnisotropy?.() || 1;
+  // Improve grazing-angle sharpness (NO optional chaining)
+  const maxAniso =
+    (renderer.capabilities && typeof renderer.capabilities.getMaxAnisotropy === "function")
+      ? renderer.capabilities.getMaxAnisotropy()
+      : 1;
+
   grassColor.anisotropy = maxAniso;
   grassNormal.anisotropy = maxAniso;
   grassRough.anisotropy = maxAniso;
@@ -146,6 +148,10 @@ export async function initScene() {
   scene.add(ground);
   scene.userData.ground = ground;
 
+  // -------------------------
+  // NOTE: Instanced grass removed.
+  // You now only have the PBR ground texture (no fake blades/cards).
+  // -------------------------
 
   // -------------------------
   // HDRI: keep lighting via PMREM, but show background via a SKY-DOME.
@@ -215,7 +221,7 @@ export async function initScene() {
 // Ground void update (cut footprint hole)
 // --------------------------------------------------------
 export function updateGroundVoid(ground, poolGroup) {
-  if (!poolGroup?.userData?.outerPts) return;
+  if (!poolGroup || !poolGroup.userData || !poolGroup.userData.outerPts) return;
 
   const outerPts = poolGroup.userData.outerPts;
 
@@ -269,12 +275,12 @@ export function updateShadowBounds(poolGroup) {
 // Update spa void uniforms on water shader
 // --------------------------------------------------------
 export function updatePoolWaterVoid(poolGroup, spaGroup) {
-  if (!poolGroup?.userData?.waterMesh) return;
+  if (!poolGroup || !poolGroup.userData || !poolGroup.userData.waterMesh) return;
 
   const poolWater = poolGroup.userData.waterMesh;
   const mat = poolWater.material;
-  const uniforms = mat?.uniforms;
-  if (!uniforms?.spaCenter || !uniforms?.spaSize) return;
+  const uniforms = mat ? mat.uniforms : null;
+  if (!uniforms || !uniforms.spaCenter || !uniforms.spaSize) return;
 
   // Clear void if no spa provided
   if (!spaGroup) {
@@ -297,7 +303,10 @@ export function updatePoolWaterVoid(poolGroup, spaGroup) {
   // Rounded void + edge polish tuning (meters)
   if (uniforms.spaRadius) {
     const r = 0.15 * Math.min(spaSizeWorld.x, spaSizeWorld.y);
-    uniforms.spaRadius.value = Math.max(0.0, Math.min(r, Math.min(spaSizeWorld.x, spaSizeWorld.y) * 0.5));
+    uniforms.spaRadius.value = Math.max(
+      0.0,
+      Math.min(r, Math.min(spaSizeWorld.x, spaSizeWorld.y) * 0.5)
+    );
   }
   if (uniforms.spaFeather) uniforms.spaFeather.value = 0.03;
   if (uniforms.spaEdgeWidth) uniforms.spaEdgeWidth.value = 0.08;
@@ -309,16 +318,6 @@ export function updatePoolWaterVoid(poolGroup, spaGroup) {
 // Rebuild grass overlay after pool rebuild
 // --------------------------------------------------------
 export function updateGrassForPool(scene, poolGroup) {
-  const gs = scene?.userData?.grassSystem;
-  if (!gs || !poolGroup) return;
-
-  // Use pool footprint to avoid spawning inside pool void
-  gs.setPoolPolygon(poolGroup.userData?.outerPts || null);
-
-  // Center around pool bounds
-  const box = new THREE.Box3().setFromObject(poolGroup);
-  const center = box.getCenter(new THREE.Vector3());
-  gs.setCenter(center);
-
-  gs.ensureBuilt();
+  // Instanced grass removed — keep function for compatibility with PoolApp
+  return;
 }
