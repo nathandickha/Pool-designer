@@ -3,7 +3,6 @@
 import * as THREE from "https://esm.sh/three@0.158.0";
 import { OrbitControls } from "https://esm.sh/three@0.158.0/examples/jsm/controls/OrbitControls.js";
 import { RGBELoader } from "https://esm.sh/three@0.158.0/examples/jsm/loaders/RGBELoader.js";
-import { GrassInstanced } from "./grass/GrassInstanced.js";
 
 let dirLight;
 
